@@ -1,6 +1,11 @@
 # C development
 c/http_client
 
+#idea
+.idea
+out
+prod
+
 *.o
 *.ko
 *.obj

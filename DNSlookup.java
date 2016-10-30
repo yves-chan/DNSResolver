@@ -1,6 +1,7 @@
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 /**
@@ -16,6 +17,7 @@ public class DNSlookup {
 
 
 	static final int MIN_PERMITTED_ARGUMENT_COUNT = 2;
+	static final int QUERY_HEADER_LENGTH = 12;
 	static boolean tracingOn = false;
 	static InetAddress rootNameServer;
 	
@@ -34,12 +36,26 @@ public class DNSlookup {
 
 		rootNameServer = InetAddress.getByName(args[0]);
 		fqdn = args[1];
+
 		
 		if (argCount == 3 && args[2].equals("-t"))
 				tracingOn = true;
 		
 		// Start adding code here to initiate the lookup
-		
+
+		// Use two bytes for qID
+		Random random = new Random();
+		int randInt = random.nextInt(65536);
+		byte[] qID= new byte[]{(byte) (randInt&0xFF), (byte) ((randInt >> 8) &0xFF)};
+
+		//Generate header
+		byte[] header = new byte[QUERY_HEADER_LENGTH];
+		System.arraycopy(qID, 0, header,0, qID.length);
+		//set QDCOuNT to 1
+		header[6] = (byte) 0x01;
+
+
+
 	}
 
 	private static void usage() {
