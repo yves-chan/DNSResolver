@@ -17,7 +17,6 @@ public class DNSlookup {
 
 
 	static final int MIN_PERMITTED_ARGUMENT_COUNT = 2;
-	static final int QUERY_HEADER_LENGTH = 12;
 	static boolean tracingOn = false;
 	static InetAddress rootNameServer;
 	
@@ -40,19 +39,16 @@ public class DNSlookup {
 		
 		if (argCount == 3 && args[2].equals("-t"))
 				tracingOn = true;
-		
-		// Start adding code here to initiate the lookup
 
-		// Use two bytes for qID
-		Random random = new Random();
-		int randInt = random.nextInt(65536);
-		byte[] qID= new byte[]{(byte) (randInt&0xFF), (byte) ((randInt >> 8) &0xFF)};
+		boolean hasAnswer = false;
 
-		//Generate header
-		byte[] header = new byte[QUERY_HEADER_LENGTH];
-		System.arraycopy(qID, 0, header,0, qID.length);
-		//set QDCOuNT to 1
-		header[6] = (byte) 0x01;
+		while (!hasAnswer) {
+			DNSQuery query = new DNSQuery(rootNameServer, fqdn);
+			query.sendQuery();
+			hasAnswer = true;
+		}
+
+
 
 
 
