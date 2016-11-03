@@ -65,7 +65,7 @@ public class DNSQuery {
             String nsLength = Integer.toHexString(s.length());
             //append 0 to length of string if less that 1
             if (nsLength.length() < 2) {
-                nsLength = 0+nsLength;
+                nsLength = "0"+nsLength;
             }
             sb.append(nsLength);
             //for each of the strings in split, get their hex value of each char
@@ -75,6 +75,7 @@ public class DNSQuery {
         }
         //End of QNAME
         sb.append("00");
+        //
         sb.append("00010001");
         String encodedLookup = sb.toString();
         return DatatypeConverter.parseHexBinary(encodedLookup);
@@ -87,7 +88,7 @@ public class DNSQuery {
         byte[] header = new byte[QUERY_HEADER_LENGTH];
         System.arraycopy(qID, 0, header,0, qID.length);
         //set QDCOuNT to 1
-        header[6] = (byte) 0x01;
+        header[5] = (byte) 0x01;
         this.header = header;
         return header;
     }

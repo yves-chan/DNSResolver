@@ -31,14 +31,17 @@ public class DNSResponse {
     // The constructor: you may want to add additional parameters, but the two shown are 
     // probably the minimum that you need.
 
-	public DNSResponse (byte[] data, int len) {
-	    
+	public DNSResponse (byte[] data, DNSQuery query) {
+
 	    // The following are probably some of the things 
 	    // you will need to do.
 	    // Extract the query ID
+        this.queryID = query.getQueryID();
 
 	    // Make sure the message is a query response and determine
-	    // if it is an authoritative response or note
+	    // if it is an authoritative response or not
+
+
 
 	    // determine answer count
 
@@ -49,6 +52,30 @@ public class DNSResponse {
 	    // Extract list of answers, name server, and additional information response 
 	    // records
 	}
+
+    public int getQueryID() {
+        return queryID;
+    }
+
+    public int getAnswerCount() {
+        return answerCount;
+    }
+
+    public boolean isDecoded() {
+        return decoded;
+    }
+
+    public int getNsCount() {
+        return nsCount;
+    }
+
+    public int getAdditionalCount() {
+        return additionalCount;
+    }
+
+    public boolean isAuthoritative() {
+        return authoritative;
+    }
 
 
     // You will probably want a methods to extract a compressed FQDN, IP address
