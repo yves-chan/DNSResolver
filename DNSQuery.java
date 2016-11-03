@@ -45,6 +45,8 @@ public class DNSQuery {
             byte [] b = new byte[512];
             packet = new DatagramPacket(b, b.length);
             socket.receive(packet);
+            //For debugging
+            System.out.println((packet.getData()));
         } catch (IOException e){
             sendQuery();
         }

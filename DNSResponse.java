@@ -1,9 +1,9 @@
 
 import java.net.InetAddress;
+import java.util.Arrays;
 
 
-
-// Lots of the action associated with handling a DNS query is processing 
+// Lots of the action associated with handling a DNS query is processing
 // the response. Although not required you might find the following skeleton of
 // a DNSreponse helpful. The class below has bunch of instance data that typically needs to be 
 // parsed from the response. If you decide to use this class keep in mind that it is just a 
@@ -31,12 +31,16 @@ public class DNSResponse {
     // The constructor: you may want to add additional parameters, but the two shown are 
     // probably the minimum that you need.
 
-	public DNSResponse (byte[] data, DNSQuery query) {
+	public DNSResponse (DNSQuery query) {
 
+        byte[] data = query.getPacket().getData();
 	    // The following are probably some of the things 
 	    // you will need to do.
 	    // Extract the query ID
         this.queryID = query.getQueryID();
+        System.out.println(Arrays.toString(data));
+
+
 
 	    // Make sure the message is a query response and determine
 	    // if it is an authoritative response or not

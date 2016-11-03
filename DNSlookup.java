@@ -45,7 +45,7 @@ public class DNSlookup {
 		while (!hasAnswer) {
 			DNSQuery query = new DNSQuery(rootNameServer, fqdn);
 			query.sendQuery();
-			response = new DNSResponse(query.getPacket().getData(), query);
+			response = new DNSResponse(query);
 			hasAnswer = true;
 		}
 
