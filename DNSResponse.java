@@ -17,8 +17,10 @@ public class DNSResponse {
     private int answerCount = 0;          // number of answers  
     private boolean decoded = false;      // Was this response successfully decoded
     private int nsCount = 0;              // number of nscount response records
+    private int qCount = 0;               // number of qcounts
     private int additionalCount = 0;      // number of additional (alternate) response records
     private boolean authoritative = false;// Is this an authoritative record
+    private int replyCode = 0xf;
 
     // Note you will almost certainly need some additional instance variables.
 
@@ -40,18 +42,38 @@ public class DNSResponse {
         this.queryID = query.getQueryID();
         System.out.println(Arrays.toString(data));
 
+        // Check if Data is a response
+        if ((data[2] & 0xc0) != 0x80) {
+            //not a response
+            return;
+        }
 
+        //Check authoritative response
+        if ((data[2] & 0x4) != 0) {
+            authoritative = true;
+        }
 
-	    // Make sure the message is a query response and determine
-	    // if it is an authoritative response or not
+        //Check reply code
+        replyCode = data[3] & 0xf;
+        if (replyCode != 0) {
+            return;
+        }
 
+        // Determine Qcount
+        qCount = data[4] << 8 & 0xff00;
+        qCount |= data[5] & 0xff;
 
+        // Determine Answer count
+        answerCount = data[6] << 8 & 0xff00;
+        answerCount |= data[7] & 0xff;
 
-	    // determine answer count
+        // Determine NS count
+        nsCount = data[8] << 8 & 0xff00;
+        nsCount |= data[9] &0xff;
 
-	    // determine NS Count
-
-	    // determine additional record count
+        // Determine Additional count
+        additionalCount = data[10] << 8 & 0xff00;
+        additionalCount |= data[11] & 0xff;
 
 	    // Extract list of answers, name server, and additional information response 
 	    // records

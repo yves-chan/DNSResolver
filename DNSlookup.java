@@ -41,9 +41,10 @@ public class DNSlookup {
 				tracingOn = true;
 
 		boolean hasAnswer = false;
+		InetAddress target = rootNameServer;
 
 		while (!hasAnswer) {
-			DNSQuery query = new DNSQuery(rootNameServer, fqdn);
+			DNSQuery query = new DNSQuery(target, fqdn);
 			query.sendQuery();
 			response = new DNSResponse(query);
 			hasAnswer = true;

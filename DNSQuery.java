@@ -10,6 +10,14 @@ import java.util.Random;
  * Created by yves-chan on 02/11/16.
  */
 public class DNSQuery {
+    public static final int SO_TIMEOUT = 3000;
+    public static final int RESPONSE_BYTE_SIZE = 512;
+    public static final int PORT = 53;
+    public static final int QUERY_HEADER_LENGTH = 12;
+    public static final String QNAME_END = "00";
+    public static final String QTYPE_DOMAIN_NAME = "0001";
+    public static final String QCLASS_INTERNET = "0001";
+    public static final int MAX_RAND_INT = 65536;
     private String lookup;
     private InetAddress fromAddress;
     private DatagramSocket socket;
@@ -17,8 +25,6 @@ public class DNSQuery {
     private int queryID;
     private byte[] header;
     private byte[] data;
-
-    static final int QUERY_HEADER_LENGTH = 12;
 
 
 
@@ -37,12 +43,12 @@ public class DNSQuery {
         // send request
         data = makeRequest(lookup);
         try {
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, fromAddress, 53);
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, fromAddress, PORT);
             socket.send(sendPacket);
-            socket.setSoTimeout(3000);
+            socket.setSoTimeout(SO_TIMEOUT);
 
             // get response
-            byte [] b = new byte[512];
+            byte [] b = new byte[RESPONSE_BYTE_SIZE];
             packet = new DatagramPacket(b, b.length);
             socket.receive(packet);
             //For debugging
@@ -76,9 +82,11 @@ public class DNSQuery {
             }
         }
         //End of QNAME
-        sb.append("00");
-        //
-        sb.append("00010001");
+        sb.append(QNAME_END);
+        // Type of Qtype is internet
+        sb.append(QTYPE_DOMAIN_NAME);
+        // Q class is internet
+        sb.append(QCLASS_INTERNET);
         String encodedLookup = sb.toString();
         return DatatypeConverter.parseHexBinary(encodedLookup);
     }
@@ -98,7 +106,7 @@ public class DNSQuery {
     private byte[] generateRandomByte() {
         // Use two bytes for qID
         Random random = new Random();
-        int randInt = random.nextInt(65536);
+        int randInt = random.nextInt(MAX_RAND_INT);
         this.queryID = randInt;
         return new byte[]{(byte) (randInt&0xFF), (byte) ((randInt >> 8) &0xFF)};
     }
