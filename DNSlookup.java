@@ -47,7 +47,12 @@ public class DNSlookup {
 			DNSQuery query = new DNSQuery(target, fqdn);
 			query.sendQuery();
 			response = new DNSResponse(query);
+			if (tracingOn) {
+				response.dumpResponse();
+			}
+
 			hasAnswer = true;
+
 		}
 
 

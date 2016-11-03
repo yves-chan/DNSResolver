@@ -21,20 +21,29 @@ public class DNSResponse {
     private int additionalCount = 0;      // number of additional (alternate) response records
     private boolean authoritative = false;// Is this an authoritative record
     private int replyCode = 0xf;
+    private DNSQuery query;
 
     // Note you will almost certainly need some additional instance variables.
 
     // When in trace mode you probably want to dump out all the relevant information in a response
 
 	void dumpResponse() {
-
-	}
+        System.out.println("Query ID:          "+ query.getQueryID() + " " + query.getLookup() + " --> " +
+            query.getFromAddress().toString().substring(1));
+        System.out.println("Response ID:       "+ queryID + " Authoritative " + authoritative);
+        System.out.println("    Answers("+answerCount+")");
+        //TODO: print list of answers
+        System.out.println("    Nameservers("+nsCount+")");
+        //TODO: print list of nameservers
+        System.out.println("    Additional Information("+additionalCount+")");
+        //TODO: print list of additional information
+    }
 
     // The constructor: you may want to add additional parameters, but the two shown are 
     // probably the minimum that you need.
 
 	public DNSResponse (DNSQuery query) {
-
+        this.query = query;
         byte[] data = query.getPacket().getData();
 	    // The following are probably some of the things 
 	    // you will need to do.
