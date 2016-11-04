@@ -83,29 +83,32 @@ public class DNSResponse {
         }
 
         // Determine Qcount
-        qCount = data[QCOUNT_BYTE] << 8;
-        qCount |= data[QCOUNT_BYTE+1];
+        qCount = (data[QCOUNT_BYTE] << 8) & 0xff00;
+        qCount |= data[QCOUNT_BYTE+1] & 0xff;
+
+        //Double Check question size at this point
+        if (qCount!=1) {
+            return;
+        }
 
         // Determine Answer count
-        answerCount = data[ANSWER_COUNT_BYTE] << 8;
-        answerCount |= data[ANSWER_COUNT_BYTE+1];
+        answerCount = data[ANSWER_COUNT_BYTE] << 8 & 0xFF00;
+        answerCount |= data[ANSWER_COUNT_BYTE+1] & 0xff;
         answerList = new ResponseRecords[answerCount];
 
         // Determine NS count
-        nsCount = data[NS_COUNT_BYTE] << 8;
-        nsCount |= data[NS_COUNT_BYTE+1];
+        nsCount = data[NS_COUNT_BYTE] << 8 & 0xFF00;
+        nsCount |= data[NS_COUNT_BYTE+1] & 0xff;
         nsList = new ResponseRecords[nsCount];
 
         // Determine Additional count
-        additionalCount = data[ADDITIONAL_COUNT_BYTE] << 8;
-        additionalCount |= data[ADDITIONAL_COUNT_BYTE+1];
+        additionalCount = data[ADDITIONAL_COUNT_BYTE] << 8 & 0xFF00;
+        additionalCount |= data[ADDITIONAL_COUNT_BYTE+1] & 0xff;
         additionalList = new ResponseRecords[additionalCount];
 
         Qfqdn = getFQDN(data);
         //Bypass Qtype and Qname
         processingByteOffset += 4;
-
-        System.out.println(Qfqdn);
 
         //Generate Answer List
         for (int i=0; i<answerCount; i++){
@@ -131,25 +134,31 @@ public class DNSResponse {
         String fqdn_string = "";
         //iterate to see the length of the fqDN
         int position;
-        while ((position = (data[processingByteOffset++] & 0xff)) != 0) {
-            //compressed FQDN case
-            if ((position & 0xC0) > 0) {
-                position = (position & 0x3f) << 8;
-                position |= (data[processingByteOffset++]);
-                return getCompressedFQDN(fqdn_string, data, position);
-            } else {
-                //normal case
-                String part = "";
-                for (int i = 0; i < position; i++) {
-                    part += (char) data[processingByteOffset++];
+        try {
+            while ((position = (data[processingByteOffset++] & 0xff)) != 0) {
+                //compressed FQDN case
+                if ((position & 0xC0) > 0) {
+                    position = (position & 0x3f) << 8;
+                    position |= (data[processingByteOffset++]);
+                    return getCompressedFQDN(fqdn_string, data, position);
+                } else {
+                    //normal case
+                    String part = "";
+                    for (int i = 0; i < position; i++) {
+                        part += (char) data[processingByteOffset++];
+                    }
+                    fqdn.add(part);
                 }
-                fqdn.add(part);
             }
+            fqdn_string = fqdn.get(0);
+            for (int i = 1; i<fqdn.size(); i++) {
+                fqdn_string += "."+fqdn.get(i);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Exception");
         }
-        fqdn_string = fqdn.get(0);
-        for (int i = 1; i<fqdn.size(); i++) {
-            fqdn_string += "."+fqdn.get(i);
-        }
+
         return fqdn_string;
     }
 
