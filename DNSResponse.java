@@ -107,6 +107,19 @@ public class DNSResponse {
 
         System.out.println(Qfqdn);
 
+        //Generate Answer List
+        for (int i=0; i<answerCount; i++){
+            answerList[i] = makeResponseRecords(data);
+        }
+        //Generate nsList
+        for (int i=0; i<nsCount; i++){
+            nsList[i] = makeResponseRecords(data);
+        }
+        //Generate Additional information list
+        for (int i=0; i<additionalCount; i++){
+            additionalList[i] = makeResponseRecords(data);
+        }
+
 
 
 	    // Extract list of answers, name server, and additional information response 
@@ -115,16 +128,51 @@ public class DNSResponse {
 
     private String getFQDN(byte[] data) {
         List<String> fqdn = new ArrayList<>();
+        String fqdn_string = "";
         //iterate to see the length of the fqDN
-        int numChars;
-        while ((numChars = (data[processingByteOffset++] & 0xff)) != 0) {
-            String part = "";
-            for (int i=0; i<numChars; i++) {
-                part += (char) data[processingByteOffset++];
+        int position;
+        while ((position = (data[processingByteOffset++] & 0xff)) != 0) {
+            //compressed FQDN case
+            if ((position & 0xC0) > 0) {
+                position = (position & 0x3f) << 8;
+                position |= (data[processingByteOffset++]);
+                return getCompressedFQDN(fqdn_string, data, position);
+            } else {
+                //normal case
+                String part = "";
+                for (int i = 0; i < position; i++) {
+                    part += (char) data[processingByteOffset++];
+                }
+                fqdn.add(part);
             }
-            fqdn.add(part);
         }
-        String fqdn_string = fqdn.get(0);
+        fqdn_string = fqdn.get(0);
+        for (int i = 1; i<fqdn.size(); i++) {
+            fqdn_string += "."+fqdn.get(i);
+        }
+        return fqdn_string;
+    }
+
+    private String getCompressedFQDN(String fqdn_string, byte[] data, int offset) {
+        List<String> fqdn = new ArrayList<>();
+        //iterate to see the length of the fqDN
+        int position;
+        while ((position = (data[offset++] & 0xff)) != 0) {
+            //compressed FQDN case
+            if ((position & 0xC0) > 0) {
+                position = (position & 0x3f) << 8;
+                position |= (data[offset++] & 0xff);
+                return getCompressedFQDN(fqdn_string, data, position);
+            } else {
+                //normal case
+                String part = "";
+                for (int i = 0; i < position; i++) {
+                    part += (char) data[offset++];
+                }
+                fqdn.add(part);
+            }
+        }
+        fqdn_string = fqdn.get(0);
         for (int i = 1; i<fqdn.size(); i++) {
             fqdn_string += "."+fqdn.get(i);
         }
@@ -133,6 +181,29 @@ public class DNSResponse {
 
     public ResponseRecords makeResponseRecords(byte[] data) {
         //TODO: make response record
+        String fqdn = getFQDN(data);
+
+        //Get rtype
+        int rtype = data[processingByteOffset++] << 8;
+        rtype |= data[processingByteOffset++];
+
+        //Get rclass
+        int rclass = data[processingByteOffset++] << 8;
+        rclass |= data[processingByteOffset++];
+
+        // The TTL value is 4 bytes
+        int ttl = 0;
+        for (int i= 0; i < 4; i++) {
+            ttl = ttl << 8;
+            ttl |= (data[processingByteOffset++] & 0xFF);
+        }
+
+        int responseLength = data[processingByteOffset++] << 8 ;
+        responseLength |= data[processingByteOffset];
+
+        //TODO: generate RR based on rtype and rclass
+
+        processingByteOffset += responseLength;
         return null;
     }
 
