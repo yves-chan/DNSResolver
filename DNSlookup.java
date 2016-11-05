@@ -19,6 +19,9 @@ public class DNSlookup {
 	static final int MIN_PERMITTED_ARGUMENT_COUNT = 2;
 	static boolean tracingOn = false;
 	static InetAddress rootNameServer;
+	static InetAddress root;
+	static String target;
+	static boolean hasAnswer = false;
 	
 	/**
 	 * @param args
@@ -40,13 +43,41 @@ public class DNSlookup {
 		if (argCount == 3 && args[2].equals("-t"))
 				tracingOn = true;
 
-		boolean hasAnswer = false;
-		InetAddress target = rootNameServer;
 
+		root = rootNameServer;
+		target = fqdn;
 		while (!hasAnswer) {
-			DNSQuery query = new DNSQuery(target, fqdn);
+			DNSQuery query = new DNSQuery(root, target);
 			query.sendQuery();
 			response = new DNSResponse(query);
+			String test = response.getCNAME();
+			//only want to look up CNAME when the answer ==1 and value is not IP address
+
+//			if(response.getAnswerCount()!=0) {
+//				//Todo: check if type = A or CN (RRtype == )
+//				//if A, that means it's IP address
+//				//if CN, that means it's CNAME
+//				if(response.getCNAME() == null && ) {
+//					hasAnswer = true;
+//					break;
+//				} else {
+//					root = rootNameServer;
+//					target = response.getCNAME();
+//				}
+//			} else if (response.getAdditionalCount()!=0) {
+//				root = response.reQuery();
+//			}
+//
+//
+//
+//			} else if (response.getAdditionalCount()!=0) { // answer = 0, additional count >0
+//				root = response.requery();
+//			} else { //answer = 0, additional count = 0
+//			}
+//			}
+//
+//			if(response.getAnswerCount()==1 && response.)
+
 			if (tracingOn) {
 				response.dumpResponse();
 			}

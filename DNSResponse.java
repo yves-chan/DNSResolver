@@ -148,7 +148,8 @@ public class DNSResponse {
                 if ((position & 0xC0) > 0) {
                     position = ((position & 0x3f) << 8) & 0xff00;
                     position |= (data[processingByteOffset++]) & 0xff;
-                    return getCompressedFQDN(fqdn_string, data, position);
+                    fqdn.add(getCompressedFQDN(fqdn_string, data, position));
+                    break;
                 } else {
                     //normal case
                     String part = "";
@@ -181,7 +182,8 @@ public class DNSResponse {
             if ((position & 0xC0) > 0) {
                 position = ((position & 0x3f) << 8);
                 position |= (data[offset++]) & 0xff;
-                return getCompressedFQDN(fqdn_string, data, position);
+                fqdn.add(getCompressedFQDN(fqdn_string, data, position));
+                break;
             } else {
                 //normal case
                 String part = "";
@@ -282,6 +284,15 @@ public class DNSResponse {
         return authoritative;
     }
 
+    public String getCNAME() {
+        if(answerCount>0) {
+            if(answerList[0].getRecordType().equals("CN")) {
+                return answerList[0].getRecordValue();
+            }
+        }
+        return null;
+    }
+
 
     // You will probably want a methods to extract a compressed FQDN, IP address
     // cname, authoritative DNS servers and other values like the query ID etc.
@@ -291,7 +302,7 @@ public class DNSResponse {
     // the important values they are returning. Note that an IPV6 reponse record
     // is of type 28. It probably wouldn't hurt to have a response record class to hold
     // these records.
-    class ResponseRecord {
+    public class ResponseRecord {
         private String name;
         private int ttl;
         private String recordType;
