@@ -25,6 +25,7 @@ public class DNSQuery {
     private int queryID;
     private byte[] header;
     private byte[] data;
+    private int retryAttempts = 0;
 
 
 
@@ -53,6 +54,11 @@ public class DNSQuery {
             socket.receive(packet);
         } catch (IOException e){
             sendQuery();
+            retryAttempts++;
+            if (retryAttempts > 10) {
+                System.out.println("Reached maximum Level of retries");
+                return;
+            }
         }
     }
     public byte[] makeRequest(String lookup){

@@ -32,7 +32,6 @@ public class DNSResponse {
     private boolean authoritative = false;// Is this an authoritative record
     private int replyCode = 0xf;
     private DNSQuery query;
-
     private ResponseRecord[] answerList;
     private ResponseRecord[] additionalList;
     private ResponseRecord[] nsList;
@@ -70,8 +69,8 @@ public class DNSResponse {
 	    // The following are probably some of the things 
 	    // you will need to do.
 	    // Extract the query ID
-        this.queryID = data[0] <<8 &0xff00;
-        this.queryID |= data[1] & 0xff;
+        this.queryID = (data[1] << 8 ) & 0xff00;
+        this.queryID = this.queryID | (data[0]) & 0xff;
 
         // Check if Data is a response
         if ((data[RESPONSE_BYTE] & 0xc0) != 0x80) {
@@ -325,6 +324,16 @@ public class DNSResponse {
             if(additionalList[i].getRecordType().equals(RRTypes.A)) {
                 try {
                     return InetAddress.getByName(additionalList[i].getRecordValue());
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        for(int i = 0; i< answerCount; i++) {
+            if(answerList[i].getRecordType().equals(RRTypes.A)) {
+                try {
+                    return InetAddress.getByName(answerList[i].getRecordValue());
                 } catch (Exception e){
                     e.printStackTrace();
                 }

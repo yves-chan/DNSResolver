@@ -51,26 +51,34 @@ public class DNSlookup {
 			//only want to look up CNAME when the answer ==1 and value is not IP address
 
 			if(response.getAnswerCount()!=0) {
-				if(response.getAnswerList()[0].getRecordType().equals(RRTypes.A)) {
+				//If not resolving a name server
+				if(response.getAnswerList()[0].getRecordType().equals(RRTypes.A)
+						&& !response.getAnswerList()[0].getName().substring(0,2).equals("ns")) {
 					hasAnswer = true;
 				} else if (response.getAnswerList()[0].getRecordType().equals(RRTypes.CNAME)){
 					root = rootNameServer;
 					target = response.getAnswerList()[0].getRecordValue();
+				} else {
+					root = response.reQuery();
+					target = fqdn;
 				}
 			} else if (response.getAdditionalCount()!=0) {
 				root = response.reQuery();
+			} else if (response.getNsCount() != 0 && !response.getNsList()[0].getRecordValue().equals("----")) {
+				target = response.getNsList()[0].getRecordValue();
+				root = rootNameServer;
 			} else {
-
+				break;
 			}
 			if (tracingOn) {
 				response.dumpResponse();
 			}
 		}
-		if (response != null && response.getAnswerCount()!= 0) {
+		if (hasAnswer) {
 			System.out.println(fqdn + " " + response.getAnswerList()[0].getTtl() + " " +
 					response.getAnswerList()[0].getRecordValue());
 		} else {
-			System.out.println(fqdn + " -2 0.0.0.0");
+			System.out.println(fqdn + " -4 0.0.0.0");
 		}
 
 
