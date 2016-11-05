@@ -1,4 +1,6 @@
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,9 +33,9 @@ public class DNSResponse {
     private boolean authoritative = false;// Is this an authoritative record
     private int replyCode = 0xf;
     private DNSQuery query;
-    private ResponseRecords[] answerList;
-    private ResponseRecords[] additionalList;
-    private ResponseRecords[] nsList;
+    private ResponseRecord[] answerList;
+    private ResponseRecord[] additionalList;
+    private ResponseRecord[] nsList;
 
     // Note you will almost certainly need some additional instance variables.
 
@@ -94,17 +96,17 @@ public class DNSResponse {
         // Determine Answer count
         answerCount = data[ANSWER_COUNT_BYTE] << 8 & 0xFF00;
         answerCount |= data[ANSWER_COUNT_BYTE+1] & 0xff;
-        answerList = new ResponseRecords[answerCount];
+        answerList = new ResponseRecord[answerCount];
 
         // Determine NS count
         nsCount = data[NS_COUNT_BYTE] << 8 & 0xFF00;
         nsCount |= data[NS_COUNT_BYTE+1] & 0xff;
-        nsList = new ResponseRecords[nsCount];
+        nsList = new ResponseRecord[nsCount];
 
         // Determine Additional count
         additionalCount = data[ADDITIONAL_COUNT_BYTE] << 8 & 0xFF00;
         additionalCount |= data[ADDITIONAL_COUNT_BYTE+1] & 0xff;
-        additionalList = new ResponseRecords[additionalCount];
+        additionalList = new ResponseRecord[additionalCount];
 
         Qfqdn = getFQDN(data);
         //Bypass Qtype and Qname
@@ -112,15 +114,15 @@ public class DNSResponse {
 
         //Generate Answer List
         for (int i=0; i<answerCount; i++){
-            answerList[i] = makeResponseRecords(data);
+            answerList[i] = makeResponseRecord(data);
         }
         //Generate nsList
         for (int i=0; i<nsCount; i++){
-            nsList[i] = makeResponseRecords(data);
+            nsList[i] = makeResponseRecord(data);
         }
         //Generate Additional information list
         for (int i=0; i<additionalCount; i++){
-            additionalList[i] = makeResponseRecords(data);
+            additionalList[i] = makeResponseRecord(data);
         }
 
 
@@ -138,8 +140,8 @@ public class DNSResponse {
             while ((position = (data[processingByteOffset++] & 0xff)) != 0) {
                 //compressed FQDN case
                 if ((position & 0xC0) > 0) {
-                    position = (position & 0x3f) << 8;
-                    position |= (data[processingByteOffset++]);
+                    position = ((position & 0x3f) << 8) & 0xff00;
+                    position |= (data[processingByteOffset++]) & 0xff;
                     return getCompressedFQDN(fqdn_string, data, position);
                 } else {
                     //normal case
@@ -150,13 +152,15 @@ public class DNSResponse {
                     fqdn.add(part);
                 }
             }
-            fqdn_string = fqdn.get(0);
-            for (int i = 1; i<fqdn.size(); i++) {
-                fqdn_string += "."+fqdn.get(i);
+            if (fqdn.size() != 0) {
+                fqdn_string = fqdn.get(0);
+                for (int i = 1; i < fqdn.size(); i++) {
+                    fqdn_string += "." + fqdn.get(i);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Exception");
+            System.out.println("Exception in getFQDN");
         }
 
         return fqdn_string;
@@ -169,8 +173,8 @@ public class DNSResponse {
         while ((position = (data[offset++] & 0xff)) != 0) {
             //compressed FQDN case
             if ((position & 0xC0) > 0) {
-                position = (position & 0x3f) << 8;
-                position |= (data[offset++] & 0xff);
+                position = ((position & 0x3f) << 8) & 0xff00;
+                position |= (data[offset++]) & 0xff;
                 return getCompressedFQDN(fqdn_string, data, position);
             } else {
                 //normal case
@@ -181,24 +185,26 @@ public class DNSResponse {
                 fqdn.add(part);
             }
         }
-        fqdn_string = fqdn.get(0);
-        for (int i = 1; i<fqdn.size(); i++) {
-            fqdn_string += "."+fqdn.get(i);
+        if (fqdn.size() != 0) {
+            fqdn_string = fqdn.get(0);
+            for (int i = 1; i < fqdn.size(); i++) {
+                fqdn_string += "." + fqdn.get(i);
+            }
         }
         return fqdn_string;
     }
 
-    public ResponseRecords makeResponseRecords(byte[] data) {
+    public ResponseRecord makeResponseRecord(byte[] data) {
         //TODO: make response record
         String fqdn = getFQDN(data);
 
         //Get rtype
-        int rtype = data[processingByteOffset++] << 8;
-        rtype |= data[processingByteOffset++];
+        int rtype = (data[processingByteOffset++] << 8) & 0xff00;
+        rtype |= data[processingByteOffset++] & 0xff;
 
         //Get rclass
-        int rclass = data[processingByteOffset++] << 8;
-        rclass |= data[processingByteOffset++];
+        int rclass = (data[processingByteOffset++] << 8) & 0xff00;
+        rclass |= data[processingByteOffset++] & 0xff;
 
         // The TTL value is 4 bytes
         int ttl = 0;
@@ -207,13 +213,43 @@ public class DNSResponse {
             ttl |= (data[processingByteOffset++] & 0xFF);
         }
 
-        int responseLength = data[processingByteOffset++] << 8 ;
-        responseLength |= data[processingByteOffset];
+        int responseLength = (data[processingByteOffset++] << 8) & 0xff00 ;
+        responseLength |= data[processingByteOffset] & 0xff;
 
-        //TODO: generate RR based on rtype and rclass
+        InetAddress ipAddress;
+        ResponseRecord responseRecord = null;
 
+        if (rclass == RRClass.INTERNET_VAL) {
+            if (rtype == RRTypes.A_VAL) {
+                byte[] ipv4 = new byte[4];
+                System.arraycopy(data, processingByteOffset, ipv4, 0, ipv4.length);
+                try {
+                    ipAddress = InetAddress.getByAddress(ipv4);
+                    responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.A, ipAddress.getHostAddress());
+                } catch (UnknownHostException e) {
+                    System.out.println("Unknown host");
+                }
+            } else if (rtype == RRTypes.CNAME_VAL) {
+                String name = getCompressedFQDN(fqdn, data, processingByteOffset);
+                responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.CNAME, name);
+            } else if (rtype == RRTypes.NS_VAL) {
+                String name = getCompressedFQDN(fqdn, data, processingByteOffset);
+                responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.NS, name);
+            } else if (rtype == RRTypes.AAAA_VAL) {
+                byte[] ipv6 = new byte[16];
+                System.arraycopy(data, processingByteOffset, ipv6, 0, ipv6.length);
+                try {
+                    ipAddress = InetAddress.getByAddress(ipv6);
+                    responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.AAAA, ipAddress.getHostAddress());
+                } catch (UnknownHostException e) {
+                    System.out.println("Unknown host");
+                }
+            } else {
+                //Other RR type classes
+            }
+        }
         processingByteOffset += responseLength;
-        return null;
+        return responseRecord;
     }
 
     public int getQueryID() {
@@ -249,13 +285,13 @@ public class DNSResponse {
     // the important values they are returning. Note that an IPV6 reponse record
     // is of type 28. It probably wouldn't hurt to have a response record class to hold
     // these records.
-    class ResponseRecords {
+    class ResponseRecord {
         private String name;
         private int ttl;
         private String recordType;
         private String recordValue;
 
-        ResponseRecords(String name, int ttl, String recordType, String recordValue){
+        ResponseRecord(String name, int ttl, String recordType, String recordValue){
             this.name = name;
             this.ttl = ttl;
             this.recordType = recordType;
@@ -279,6 +315,21 @@ public class DNSResponse {
             System.out.format("       %-30s %-10d %-4s %s\n", name, ttl, recordType, recordValue);
         }
 
+    }
+
+    final class RRTypes {
+        final static String A = "A";
+        final static int A_VAL = 1;
+        final static String NS = "NS";
+        final static int NS_VAL = 2;
+        final static String AAAA = "AAAA";
+        final static int AAAA_VAL = 28;
+        final static String CNAME = "CNAME";
+        final static int CNAME_VAL = 5;
+    }
+
+    final class RRClass {
+        final static int INTERNET_VAL = 1;
     }
 }
 
