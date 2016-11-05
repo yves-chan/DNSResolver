@@ -1,4 +1,3 @@
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -33,6 +32,19 @@ public class DNSResponse {
     private boolean authoritative = false;// Is this an authoritative record
     private int replyCode = 0xf;
     private DNSQuery query;
+
+    public ResponseRecord[] getAnswerList() {
+        return answerList;
+    }
+
+    public ResponseRecord[] getAdditionalList() {
+        return additionalList;
+    }
+
+    public ResponseRecord[] getNsList() {
+        return nsList;
+    }
+
     private ResponseRecord[] answerList;
     private ResponseRecord[] additionalList;
     private ResponseRecord[] nsList;
@@ -131,8 +143,6 @@ public class DNSResponse {
             additionalList[i] = makeResponseRecord(data);
         }
 
-
-
 	    // Extract list of answers, name server, and additional information response 
 	    // records
 	}
@@ -203,7 +213,6 @@ public class DNSResponse {
     }
 
     public ResponseRecord makeResponseRecord(byte[] data) {
-        //TODO: make response record
         String fqdn = getFQDN(data);
 
         //Get rtype
@@ -228,32 +237,39 @@ public class DNSResponse {
         ResponseRecord responseRecord = null;
 
         if (rclass == RRClass.INTERNET_VAL) {
-            if (rtype == RRTypes.A_VAL) {
-                byte[] ipv4 = new byte[4];
-                System.arraycopy(data, processingByteOffset, ipv4, 0, ipv4.length);
-                try {
-                    ipAddress = InetAddress.getByAddress(ipv4);
-                    responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.A, ipAddress.getHostAddress());
-                } catch (UnknownHostException e) {
-                    System.out.println("Unknown host");
-                }
-            } else if (rtype == RRTypes.CNAME_VAL) {
-                String name = getCompressedFQDN(fqdn, data, processingByteOffset);
-                responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.CNAME, name);
-            } else if (rtype == RRTypes.NS_VAL) {
-                String name = getCompressedFQDN(fqdn, data, processingByteOffset);
-                responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.NS, name);
-            } else if (rtype == RRTypes.AAAA_VAL) {
-                byte[] ipv6 = new byte[16];
-                System.arraycopy(data, processingByteOffset, ipv6, 0, ipv6.length);
-                try {
-                    ipAddress = InetAddress.getByAddress(ipv6);
-                    responseRecord = new ResponseRecord(fqdn, ttl, RRTypes.AAAA, ipAddress.getHostAddress());
-                } catch (UnknownHostException e) {
-                    System.out.println("Unknown host");
-                }
-            } else {
-                //Other RR type classes
+            switch (rtype) {
+                case RRTypes.A_VAL:
+                    byte[] ipv4 = new byte[4];
+                    System.arraycopy(data, processingByteOffset, ipv4, 0, ipv4.length);
+                    try {
+                        ipAddress = InetAddress.getByAddress(ipv4);
+                        responseRecord = new ResponseRecord(fqdn, ttl,RRClass.INTERNET_VAL,RRTypes.A,
+                            ipAddress.getHostAddress());
+                    } catch (UnknownHostException e) {
+                        System.out.println("Unknown host");
+                    }
+                    break;
+                case RRTypes.CNAME_VAL:
+                    String name = getCompressedFQDN(fqdn, data, processingByteOffset);
+                    responseRecord = new ResponseRecord(fqdn, ttl, RRClass.INTERNET_VAL, RRTypes.CNAME, name);
+                    break;
+                case RRTypes.NS_VAL:
+                    name = getCompressedFQDN(fqdn, data, processingByteOffset);
+                    responseRecord = new ResponseRecord(fqdn, ttl, RRClass.INTERNET_VAL, RRTypes.NS, name);
+                    break;
+                case RRTypes.AAAA_VAL:
+                    byte[] ipv6 = new byte[16];
+                    System.arraycopy(data, processingByteOffset, ipv6, 0, ipv6.length);
+                    try {
+                        ipAddress = InetAddress.getByAddress(ipv6);
+                        responseRecord = new ResponseRecord(fqdn, ttl, RRClass.INTERNET_VAL, RRTypes.AAAA,
+                            ipAddress.getHostAddress());
+                    } catch (UnknownHostException e) {
+                        System.out.println("Unknown host");
+                    }
+                    break;
+                default:
+                    responseRecord = new ResponseRecord(fqdn, ttl, rclass, Integer.toString(rtype), "----");
             }
         }
         processingByteOffset += responseLength;
@@ -286,13 +302,36 @@ public class DNSResponse {
 
     public String getCNAME() {
         if(answerCount>0) {
-            if(answerList[0].getRecordType().equals("CN")) {
+            if(getRecordType().equals("CN")) {
                 return answerList[0].getRecordValue();
             }
         }
         return null;
     }
 
+
+
+    public String getRecordType() {
+        if(answerCount>0) {
+
+            return answerList[0].getRecordType();
+        }
+        return null;
+    }
+
+    public InetAddress reQuery() {
+
+        for(int i = 0; i< additionalCount; i++) {
+            if(additionalList[i].getRecordType().equals(RRTypes.A)) {
+                try {
+                    return InetAddress.getByName(additionalList[i].getRecordValue());
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
 
     // You will probably want a methods to extract a compressed FQDN, IP address
     // cname, authoritative DNS servers and other values like the query ID etc.
@@ -307,10 +346,12 @@ public class DNSResponse {
         private int ttl;
         private String recordType;
         private String recordValue;
+        private int rclass;
 
-        ResponseRecord(String name, int ttl, String recordType, String recordValue){
+        ResponseRecord(String name, int ttl, int rclass, String recordType, String recordValue){
             this.name = name;
             this.ttl = ttl;
+            this.rclass = rclass;
             this.recordType = recordType;
             this.recordValue = recordValue;
         }
@@ -331,22 +372,6 @@ public class DNSResponse {
         void printItems() {
             System.out.format("       %-30s %-10d %-4s %s\n", name, ttl, recordType, recordValue);
         }
-
-    }
-
-    final class RRTypes {
-        final static String A = "A";
-        final static int A_VAL = 1;
-        final static String NS = "NS";
-        final static int NS_VAL = 2;
-        final static String AAAA = "AAAA";
-        final static int AAAA_VAL = 28;
-        final static String CNAME = "CNAME";
-        final static int CNAME_VAL = 5;
-    }
-
-    final class RRClass {
-        final static int INTERNET_VAL = 1;
     }
 }
 

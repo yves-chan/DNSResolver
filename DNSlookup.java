@@ -53,36 +53,25 @@ public class DNSlookup {
 			String test = response.getCNAME();
 			//only want to look up CNAME when the answer ==1 and value is not IP address
 
-//			if(response.getAnswerCount()!=0) {
-//				//Todo: check if type = A or CN (RRtype == )
-//				//if A, that means it's IP address
-//				//if CN, that means it's CNAME
-//				if(response.getCNAME() == null && ) {
-//					hasAnswer = true;
-//					break;
-//				} else {
-//					root = rootNameServer;
-//					target = response.getCNAME();
-//				}
-//			} else if (response.getAdditionalCount()!=0) {
-//				root = response.reQuery();
-//			}
-//
-//
-//
-//			} else if (response.getAdditionalCount()!=0) { // answer = 0, additional count >0
-//				root = response.requery();
-//			} else { //answer = 0, additional count = 0
-//			}
-//			}
-//
-//			if(response.getAnswerCount()==1 && response.)
+			if(response.getAnswerCount()!=0) {
+				if(response.getAnswerList()[0].getRecordType().equals(RRTypes.A)) {
+					hasAnswer = true;
+					break;
+				} else if (response.getAnswerList()[0].getRecordType().equals(RRTypes.CNAME)){
+					root = rootNameServer;
+					target = response.getAnswerList()[0].getRecordValue();
+				}
+			} else if (response.getAdditionalCount()!=0) {
+				root = response.reQuery();
+			} else {
+
+			}
 
 			if (tracingOn) {
 				response.dumpResponse();
 			}
 
-			hasAnswer = true;
+//			hasAnswer = true;
 
 		}
 
