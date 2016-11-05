@@ -1,7 +1,6 @@
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -30,7 +29,7 @@ public class DNSResponse {
     private int qCount = 0;               // number of qcounts
     private int additionalCount = 0;      // number of additional (alternate) response records
     private boolean authoritative = false;// Is this an authoritative record
-    private int replyCode = 0xf;
+    private int replyCode = 0x0;
     private DNSQuery query;
     private ResponseRecord[] answerList;
     private ResponseRecord[] additionalList;
@@ -103,7 +102,7 @@ public class DNSResponse {
         answerCount |= data[ANSWER_COUNT_BYTE+1] & 0xff;
         answerList = new ResponseRecord[answerCount];
 
-        // Determine NS count
+        // Determine NS_DESCRIPTION count
         nsCount = data[NS_COUNT_BYTE] << 8 & 0xFF00;
         nsCount |= data[NS_COUNT_BYTE+1] & 0xff;
         nsList = new ResponseRecord[nsCount];
@@ -223,33 +222,33 @@ public class DNSResponse {
         InetAddress ipAddress;
         ResponseRecord responseRecord = null;
 
-        if (rclass == RRClass.INTERNET_VAL) {
+        if (rclass == DNSRClass.INTERNET) {
             switch (rtype) {
-                case RRTypes.A_VAL:
+                case DNSRTypes.A_CODE:
                     byte[] ipv4 = new byte[4];
                     System.arraycopy(data, processingByteOffset, ipv4, 0, ipv4.length);
                     try {
                         ipAddress = InetAddress.getByAddress(ipv4);
-                        responseRecord = new ResponseRecord(fqdn, ttl,RRClass.INTERNET_VAL,RRTypes.A,
+                        responseRecord = new ResponseRecord(fqdn, ttl, DNSRClass.INTERNET, DNSRTypes.A_DESCRIPTION,
                             ipAddress.getHostAddress());
                     } catch (UnknownHostException e) {
                         System.out.println("Unknown host");
                     }
                     break;
-                case RRTypes.CNAME_VAL:
+                case DNSRTypes.CNAME_CODE:
                     String name = getCompressedFQDN(fqdn, data, processingByteOffset);
-                    responseRecord = new ResponseRecord(fqdn, ttl, RRClass.INTERNET_VAL, RRTypes.CNAME, name);
+                    responseRecord = new ResponseRecord(fqdn, ttl, DNSRClass.INTERNET, DNSRTypes.CNAME_DESCRIPTION, name);
                     break;
-                case RRTypes.NS_VAL:
+                case DNSRTypes.NS_CODE:
                     name = getCompressedFQDN(fqdn, data, processingByteOffset);
-                    responseRecord = new ResponseRecord(fqdn, ttl, RRClass.INTERNET_VAL, RRTypes.NS, name);
+                    responseRecord = new ResponseRecord(fqdn, ttl, DNSRClass.INTERNET, DNSRTypes.NS_DESCRIPTION, name);
                     break;
-                case RRTypes.AAAA_VAL:
+                case DNSRTypes.AAAA_CODE:
                     byte[] ipv6 = new byte[16];
                     System.arraycopy(data, processingByteOffset, ipv6, 0, ipv6.length);
                     try {
                         ipAddress = InetAddress.getByAddress(ipv6);
-                        responseRecord = new ResponseRecord(fqdn, ttl, RRClass.INTERNET_VAL, RRTypes.AAAA,
+                        responseRecord = new ResponseRecord(fqdn, ttl, DNSRClass.INTERNET, DNSRTypes.AAAA_DESCRIPTION,
                             ipAddress.getHostAddress());
                     } catch (UnknownHostException e) {
                         System.out.println("Unknown host");
@@ -287,6 +286,10 @@ public class DNSResponse {
         return authoritative;
     }
 
+    public int getReplyCode() {
+        return replyCode;
+    }
+
     public String getCNAME() {
         if(answerCount>0) {
             if(getRecordType().equals("CN")) {
@@ -321,7 +324,7 @@ public class DNSResponse {
     public InetAddress reQuery() {
 
         for(int i = 0; i< additionalCount; i++) {
-            if(additionalList[i].getRecordType().equals(RRTypes.A)) {
+            if(additionalList[i].getRecordType().equals(DNSRTypes.A_DESCRIPTION)) {
                 try {
                     return InetAddress.getByName(additionalList[i].getRecordValue());
                 } catch (Exception e){
@@ -331,7 +334,7 @@ public class DNSResponse {
         }
 
         for(int i = 0; i< answerCount; i++) {
-            if(answerList[i].getRecordType().equals(RRTypes.A)) {
+            if(answerList[i].getRecordType().equals(DNSRTypes.A_DESCRIPTION)) {
                 try {
                     return InetAddress.getByName(answerList[i].getRecordValue());
                 } catch (Exception e){

@@ -43,19 +43,23 @@ public class DNSlookup {
 
 		root = rootNameServer;
 		target = fqdn;
-		while (!hasAnswer) {
+		int rcodeError = DNSRCodes.NO_ERROR_CODE;
+
+		while (!hasAnswer && rcodeError==DNSRCodes.NO_ERROR_CODE && !target.equals("----")) {
 			DNSQuery query = new DNSQuery(root, target);
 			query.sendQuery();
 			response = new DNSResponse(query);
 			String test = response.getCNAME();
-			//only want to look up CNAME when the answer ==1 and value is not IP address
+			//only want to look up CNAME_DESCRIPTION when the answer ==1 and value is not IP address
+
+			rcodeError = response.getReplyCode();
 
 			if(response.getAnswerCount()!=0) {
 				//If not resolving a name server
-				if(response.getAnswerList()[0].getRecordType().equals(RRTypes.A)
+				if(response.getAnswerList()[0].getRecordType().equals(DNSRTypes.A_DESCRIPTION)
 						&& !response.getAnswerList()[0].getName().substring(0,2).equals("ns")) {
 					hasAnswer = true;
-				} else if (response.getAnswerList()[0].getRecordType().equals(RRTypes.CNAME)){
+				} else if (response.getAnswerList()[0].getRecordType().equals(DNSRTypes.CNAME_DESCRIPTION)){
 					root = rootNameServer;
 					target = response.getAnswerList()[0].getRecordValue();
 				} else {
@@ -64,7 +68,7 @@ public class DNSlookup {
 				}
 			} else if (response.getAdditionalCount()!=0) {
 				root = response.reQuery();
-			} else if (response.getNsCount() != 0 && !response.getNsList()[0].getRecordValue().equals("----")) {
+			} else if (response.getNsCount() != 0) {
 				target = response.getNsList()[0].getRecordValue();
 				root = rootNameServer;
 			} else {
@@ -74,16 +78,40 @@ public class DNSlookup {
 				response.dumpResponse();
 			}
 		}
+
 		if (hasAnswer) {
 			System.out.println(fqdn + " " + response.getAnswerList()[0].getTtl() + " " +
 					response.getAnswerList()[0].getRecordValue());
 		} else {
-			System.out.println(fqdn + " -4 0.0.0.0");
+			switch (rcodeError) {
+				case DNSRCodes.FORMAT_ERROR_CODE:
+					System.out.println(fqdn + " -4 0.0.0.0");
+					System.out.println("Rcode Error: " + DNSRCodes.FORMAT_ERROR_DESCRIPTION);
+					break;
+				case DNSRCodes.SERVER_FAIL_CODE:
+					System.out.println(fqdn + " -4 0.0.0.0");
+					System.out.println("Rcode Error: " + DNSRCodes.SERVER_FAIL_DESCRIPTION);
+					break;
+				case DNSRCodes.NX_DOMAIN_CODE:
+					System.out.println(fqdn + " -1 0.0.0.0");
+					System.out.println("Rcode Error: " + DNSRCodes.NX_DOMAIN_DESCRIPTION);
+					break;
+				case DNSRCodes.NOT_IMP_CODE:
+					System.out.println(fqdn + " -4 0.0.0.0");
+					System.out.println("Rcode Error: " + DNSRCodes.NOT_IMP_DESCRIPTION);
+					break;
+				case DNSRCodes.REFUSED_CODE:
+					System.out.println(fqdn + " -4 0.0.0.0");
+					System.out.println("Rcode Error: " + DNSRCodes.REFUSED_DESCRIPTION);
+					break;
+				case DNSRCodes.NO_ERROR_CODE:
+					//No errors, but no answer
+					System.out.println(fqdn + " -4 0.0.0.0");
+					break;
+				default:
+					System.out.println(fqdn + " -4 0.0.0.0");
+			}
 		}
-
-
-
-
 
 	}
 
