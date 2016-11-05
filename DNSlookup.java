@@ -52,9 +52,6 @@ public class DNSlookup {
 			DNSQuery query = new DNSQuery(root, target);
 			query.sendQuery();
 			response = new DNSResponse(query);
-			String test = response.getCNAME();
-			//only want to look up CNAME_DESCRIPTION when the answer ==1 and value is not IP address
-
 			rcodeError = response.getReplyCode();
 
 			if(response.getAnswerCount()!=0) {

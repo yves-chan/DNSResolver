@@ -303,7 +303,6 @@ public class DNSResponse {
 
     public String getRecordType() {
         if(answerCount>0) {
-
             return answerList[0].getRecordType();
         }
         return null;

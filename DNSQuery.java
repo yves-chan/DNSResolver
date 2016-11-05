@@ -1,9 +1,6 @@
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Random;
 
 /**
@@ -32,7 +29,6 @@ public class DNSQuery {
     public DNSQuery(InetAddress fromAddress, String lookup){
         this.lookup = lookup;
         this.fromAddress = fromAddress;
-        this.header = generateHeader();
     }
 
     public void sendQuery(){
@@ -52,16 +48,23 @@ public class DNSQuery {
             byte [] b = new byte[RESPONSE_BYTE_SIZE];
             packet = new DatagramPacket(b, b.length);
             socket.receive(packet);
-        } catch (IOException e){
+        } catch (SocketTimeoutException e) {
+            //Time out
+            System.out.println(lookup + " -2 0.0.0.0");
+            System.exit(1);
+        } catch (IOException e) {
+            //Too many retries
             sendQuery();
             retryAttempts++;
-            if (retryAttempts > 10) {
-                System.out.println("Reached maximum Level of retries");
-                return;
+            if (retryAttempts > 30) {
+                System.out.println(lookup + " -3 0.0.0.0");
+                System.exit(1);
             }
         }
     }
+
     public byte[] makeRequest(String lookup){
+        this.header = generateHeader();
         byte[] encodedLookup = encodeLookup(lookup);
         byte[] request = new byte[encodedLookup.length + header.length];
         System.arraycopy(header, 0, request, 0, header.length);
