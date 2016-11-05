@@ -15,13 +15,13 @@ import java.util.List;
 
 
 public class DNSResponse {
-    public static final int RESPONSE_BYTE = 2;
-    public static final int REPLY_CODE_BYTE = 3;
-    public static final int QCOUNT_BYTE = 4;
-    public static final int ANSWER_COUNT_BYTE = 6;
-    public static final int NS_COUNT_BYTE = 8;
-    public static final int ADDITIONAL_COUNT_BYTE = 10;
-    public static int processingByteOffset = 12;
+    private static final int RESPONSE_BYTE = 2;
+    private static final int REPLY_CODE_BYTE = 3;
+    private static final int QCOUNT_BYTE = 4;
+    private static final int ANSWER_COUNT_BYTE = 6;
+    private static final int NS_COUNT_BYTE = 8;
+    private static final int ADDITIONAL_COUNT_BYTE = 10;
+    private int processingByteOffset = 12;
     private String Qfqdn;
     private int queryID;                  // this is for the response it must match the one in the request
     private int answerCount = 0;          // number of answers  
@@ -32,18 +32,6 @@ public class DNSResponse {
     private boolean authoritative = false;// Is this an authoritative record
     private int replyCode = 0xf;
     private DNSQuery query;
-
-    public ResponseRecord[] getAnswerList() {
-        return answerList;
-    }
-
-    public ResponseRecord[] getAdditionalList() {
-        return additionalList;
-    }
-
-    public ResponseRecord[] getNsList() {
-        return nsList;
-    }
 
     private ResponseRecord[] answerList;
     private ResponseRecord[] additionalList;
@@ -82,8 +70,8 @@ public class DNSResponse {
 	    // The following are probably some of the things 
 	    // you will need to do.
 	    // Extract the query ID
-        this.queryID = query.getQueryID();
-        System.out.println(Arrays.toString(data));
+        this.queryID = data[0] <<8 &0xff00;
+        this.queryID |= data[1] & 0xff;
 
         // Check if Data is a response
         if ((data[RESPONSE_BYTE] & 0xc0) != 0x80) {
@@ -317,6 +305,18 @@ public class DNSResponse {
             return answerList[0].getRecordType();
         }
         return null;
+    }
+
+    public ResponseRecord[] getAnswerList() {
+        return answerList;
+    }
+
+    public ResponseRecord[] getAdditionalList() {
+        return additionalList;
+    }
+
+    public ResponseRecord[] getNsList() {
+        return nsList;
     }
 
     public InetAddress reQuery() {

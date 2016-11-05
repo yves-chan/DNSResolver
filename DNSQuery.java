@@ -51,8 +51,6 @@ public class DNSQuery {
             byte [] b = new byte[RESPONSE_BYTE_SIZE];
             packet = new DatagramPacket(b, b.length);
             socket.receive(packet);
-            //For debugging
-            System.out.println((packet.getData()));
         } catch (IOException e){
             sendQuery();
         }
@@ -115,10 +113,6 @@ public class DNSQuery {
         return queryID;
     }
 
-    public byte[] getHeader() {
-        return header;
-    }
-
     public String getLookup() {
         return lookup;
     }
@@ -127,15 +121,8 @@ public class DNSQuery {
         return fromAddress;
     }
 
-    public DatagramSocket getSocket() {
-        return socket;
-    }
-
     public DatagramPacket getPacket() {
         return packet;
     }
 
-    public byte[] getData() {
-        return data;
-    }
 }

@@ -1,8 +1,5 @@
 
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.util.Random;
 
 /**
  * 
@@ -28,7 +25,7 @@ public class DNSlookup {
 	 */
 	public static void main(String[] args) throws Exception {
 		String fqdn;
-		DNSResponse response; // Just to force compilation
+		DNSResponse response = null; // Just to force compilation
 		int argCount = args.length;
 		
 		if (argCount < 2 || argCount > 3) {
@@ -56,7 +53,6 @@ public class DNSlookup {
 			if(response.getAnswerCount()!=0) {
 				if(response.getAnswerList()[0].getRecordType().equals(RRTypes.A)) {
 					hasAnswer = true;
-					break;
 				} else if (response.getAnswerList()[0].getRecordType().equals(RRTypes.CNAME)){
 					root = rootNameServer;
 					target = response.getAnswerList()[0].getRecordValue();
@@ -66,13 +62,15 @@ public class DNSlookup {
 			} else {
 
 			}
-
 			if (tracingOn) {
 				response.dumpResponse();
 			}
-
-//			hasAnswer = true;
-
+		}
+		if (response != null && response.getAnswerCount()!= 0) {
+			System.out.println(fqdn + " " + response.getAnswerList()[0].getTtl() + " " +
+					response.getAnswerList()[0].getRecordValue());
+		} else {
+			System.out.println(fqdn + " -2 0.0.0.0");
 		}
 
 
