@@ -1,5 +1,7 @@
 
 import java.net.InetAddress;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 
@@ -44,6 +46,7 @@ public class DNSlookup {
 		root = rootNameServer;
 		target = fqdn;
 		int rcodeError = DNSRCodes.NO_ERROR_CODE;
+		Set<String> cNamesSeen = new HashSet<String>();
 
 		while (!hasAnswer && rcodeError==DNSRCodes.NO_ERROR_CODE && !target.equals("----")) {
 			DNSQuery query = new DNSQuery(root, target);
@@ -62,6 +65,12 @@ public class DNSlookup {
 				} else if (response.getAnswerList()[0].getRecordType().equals(DNSRTypes.CNAME_DESCRIPTION)){
 					root = rootNameServer;
 					target = response.getAnswerList()[0].getRecordValue();
+					for (DNSResponse.ResponseRecord r: response.getAnswerList()) {
+						if (r.getRecordValue().equals(fqdn)) {
+							//loop detected
+							hasAnswer=true;
+						}
+					}
 				} else {
 					root = response.reQuery();
 					target = fqdn;
