@@ -48,11 +48,17 @@ public class DNSResponse {
             query.getFromAddress().toString().substring(1));
         System.out.println("Response ID:  "+ queryID + " Authoritative " + authoritative);
         System.out.println("  Answers("+answerCount+")");
-        //TODO: print list of answers
+        for (ResponseRecord r : answerList) {
+            r.printItems();
+        }
         System.out.println("  Nameservers("+nsCount+")");
-        //TODO: print list of nameservers
+        for (ResponseRecord r : nsList) {
+            r.printItems();
+        }
         System.out.println("  Additional Information("+additionalCount+")");
-        //TODO: print list of additional information
+        for (ResponseRecord r : additionalList) {
+            r.printItems();
+        }
     }
 
     // The constructor: you may want to add additional parameters, but the two shown are 
@@ -173,7 +179,7 @@ public class DNSResponse {
         while ((position = (data[offset++] & 0xff)) != 0) {
             //compressed FQDN case
             if ((position & 0xC0) > 0) {
-                position = ((position & 0x3f) << 8) & 0xff00;
+                position = ((position & 0x3f) << 8);
                 position |= (data[offset++]) & 0xff;
                 return getCompressedFQDN(fqdn_string, data, position);
             } else {
@@ -214,7 +220,7 @@ public class DNSResponse {
         }
 
         int responseLength = (data[processingByteOffset++] << 8) & 0xff00 ;
-        responseLength |= data[processingByteOffset] & 0xff;
+        responseLength |= data[processingByteOffset++] & 0xff;
 
         InetAddress ipAddress;
         ResponseRecord responseRecord = null;
@@ -311,7 +317,7 @@ public class DNSResponse {
             return recordValue;
         }
 
-        void printFormattedItems(String recordType, String recordValue) {
+        void printItems() {
             System.out.format("       %-30s %-10d %-4s %s\n", name, ttl, recordType, recordValue);
         }
 
