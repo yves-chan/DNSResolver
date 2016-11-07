@@ -1,5 +1,9 @@
+
 # How to Use
-`java -jar DNSlookup.jar rootDNS name [-t].`
+1. `make all`
+This compiles the jar with the necessary dependencies.
+
+2. `java -jar DNSlookup.jar rootDNS name [-t].`
 
 rootDNS - this is the IP address (in dotted form) of the DNS server you are to start your search at. It may or may
     not be a root DNS server.

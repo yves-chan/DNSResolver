@@ -5,6 +5,7 @@ c/http_client
 .idea
 out
 prod
+*.class
 
 *.o
 *.ko
